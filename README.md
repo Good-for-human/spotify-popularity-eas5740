@@ -4,6 +4,50 @@ Can we estimate a song's Spotify popularity from its audio features, and which f
 This repo has the data preparation and exploratory analysis. The modeling notebooks start from
 `data/processed/spotify_clean.csv`.
 
+## What the data looks like
+
+Raw file is 114,000 rows, pulled as 1,000 songs per genre. After cleaning we have 81,181 songs.
+The big spike at popularity 0 is mostly duplicate releases, not songs nobody plays.
+
+![popularity before and after cleaning](reports/figures/01_popularity_raw_vs_clean.png)
+
+Songs at popularity 0 go from 14.1% to 5.8%. Mean popularity after cleaning is about 35, and only
+about 10% of songs reach 61 or higher.
+
+Audio features on their own barely correlate with popularity (strongest is instrumentalness, about
+-0.19). The decile plot is more useful: energy, acousticness, valence and duration peak in the
+middle and drop at both ends. A linear correlation averages that shape out and looks like zero.
+
+![mean popularity by feature decile](reports/figures/04_popularity_by_decile.png)
+
+Genre is the strong signal. Knowing the genre alone explains about 41% of the variance in
+popularity. EDM, pop and k-pop sit near the top. Iranian and romance average under 4, which is
+probably how those lists were filled, not a real statement about the genre.
+
+![top and bottom genres by mean popularity](reports/figures/05_genre_popularity.png)
+
+Once you compare songs only inside the same genre, the audio correlations mostly disappear. So a
+lot of "instrumental songs are less popular" is really "instrumental genres are less popular".
+
+![correlation with popularity, overall vs within genre](reports/figures/08_within_genre_correlation.png)
+
+Top 10% songs (popularity >= 61) are more danceable, louder and more often explicit, and less
+instrumental, live or acoustic. Tempo, energy and valence barely differ. Same caveat: a lot of
+this is the genre mix.
+
+![how top 10% songs differ from the rest](reports/figures/07_hits_vs_rest.png)
+
+Explicit songs average about 4.5 points higher, instrumental songs about 8.6 lower. Songs listed
+under several genres average about 10 points higher, but `n_genres` may just reflect how the file
+was collected (a popular song is easier to pull under more than one genre).
+
+![mean popularity by explicit, instrumental, genre count and artist count](reports/figures/06_flags_popularity.png)
+
+Other charts, if you want them: feature distributions
+(`reports/figures/02_feature_distributions.png`) and the audio correlation heatmap
+(`reports/figures/03_feature_correlation.png`). energy, loudness and acousticness move together
+(|r| about 0.6-0.76).
+
 ## Layout
 
 ```
@@ -40,8 +84,6 @@ and `track_genre` -> `song_genre` to match the assignment brief.
 | one row per artist + title | 81,343 | single/album/compilation copies of the same recording, most at popularity 0 |
 | drop failed audio analysis and <30 s tracks | 81,181 | tempo/time signature of 0, too short to count as a stream |
 
-Songs at popularity 0 go from 14.1% to 5.8% after cleaning.
-
 ## Notes for modeling
 
 - Use the `split` column (80/20, grouped by primary artist, seed 42). No artist is in both train and test.
@@ -49,10 +91,15 @@ Songs at popularity 0 go from 14.1% to 5.8% after cleaning.
 - Feature set A = audio only (danceability, energy, loudness, speechiness, acousticness,
   instrumentalness, liveness, valence, tempo, duration_min, explicit, mode, key, time_signature).
   Set B = A + one-hot `song_genre`. Don't use song_id, song_name, album_name, artists or primary_artist.
-- Genre alone explains ~41% of the variance, and within a genre the audio correlations mostly go away.
-  Compare A vs B, and use model A's feature importance for advice to artists.
-- energy, acousticness, valence and duration have an inverted-U relationship with popularity, so tree
-  models should beat linear regression. energy/loudness/acousticness are also highly correlated
-  (|r| ~0.6-0.76).
-- `n_genres` may be a side effect of how the data was collected, test it separately. Any artist- or
-  genre-level popularity average used as a feature has to be computed on the training folds only.
+- Compare A vs B. Use model A's feature importance when the advice is for artists, because genre
+  will dominate model B.
+- Tree models should beat plain linear regression because of the inverted-U shapes above.
+  For linear models, scale the features and don't keep energy, loudness and acousticness all at once.
+- Leave `n_genres` out of the main model and test it separately. Any artist- or genre-level
+  popularity average has to be computed on the training folds only.
+
+## Editing
+
+The repo is public, so anyone can read it. To change files, fork the repo and open a pull request.
+If you are on the team and want to push straight to `main`, you need to be added as a collaborator
+(Write). GitHub does not allow anonymous pushes.
