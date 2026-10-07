@@ -1,4 +1,4 @@
-"""Plot helpers shared by the EDA notebook. Each function draws one figure and saves it."""
+"""Plot helpers for the EDA notebook. Each function draws one figure and saves it."""
 
 from pathlib import Path
 
@@ -9,7 +9,7 @@ import seaborn as sns
 
 FIG_DIR = Path(__file__).resolve().parents[1] / "reports" / "figures"
 
-ACCENT = "#1DB954"  # Spotify green, used for the series we want the eye on
+ACCENT = "#1DB954"  # Spotify green
 MUTED = "#9AA0A6"
 DARK = "#191414"
 
@@ -35,7 +35,7 @@ def save(fig, name):
 
 
 def popularity_before_after(raw, clean):
-    fig, axes = plt.subplots(1, 2, figsize=(11, 3.8), sharey=False)
+    fig, axes = plt.subplots(1, 2, figsize=(11, 3.8))
     for ax, data, label, color in [
         (axes[0], raw["popularity"], f"Raw file (n={len(raw):,})", MUTED),
         (axes[1], clean["popularity"], f"After cleaning (n={len(clean):,})", ACCENT),
@@ -56,7 +56,6 @@ def feature_distributions(df, features):
     for ax, feat in zip(axes.flat, features):
         ax.hist(df[feat], bins=40, color=ACCENT, edgecolor="white")
         ax.set_title(feat)
-        ax.set_ylabel("")
     for ax in axes.flat[len(features):]:
         ax.set_visible(False)
     fig.suptitle("Distribution of audio features (cleaned data)", fontweight="bold", y=1.01)
@@ -79,7 +78,7 @@ def correlation_heatmap(df, features):
 
 
 def decile_profile(df, features, target="popularity"):
-    """Mean popularity per decile of each feature. Shows shapes a single correlation hides."""
+    """Mean popularity per decile of each feature (shows non-linear shapes)."""
     n_cols = 5
     n_rows = int(np.ceil(len(features) / n_cols))
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(16, 3.2 * n_rows), sharey=True)
@@ -91,7 +90,7 @@ def decile_profile(df, features, target="popularity"):
         ax.axhline(overall, color=MUTED, ls="--", lw=1)
         ax.set_title(feat)
         ax.set_xticks([1, 5, 10])
-        ax.set_xlabel("decile (low → high)")
+        ax.set_xlabel("decile (low -> high)")
     for ax in axes.flat[len(features):]:
         ax.set_visible(False)
     axes.flat[0].set_ylabel(f"mean {target}")
@@ -120,7 +119,7 @@ def genre_ranking(df, n=15, target="popularity"):
 
 
 def flag_comparison(df, target="popularity"):
-    """Mean popularity with 95% CI for a few binary / count attributes."""
+    """Mean popularity with 95% CI for a few binary / count columns."""
     panels = [
         ("explicit", df["explicit"].map({0: "clean", 1: "explicit"})),
         ("instrumental (>0.5)", df["is_instrumental"].map({0: "vocal", 1: "instrumental"})),
@@ -142,7 +141,7 @@ def flag_comparison(df, target="popularity"):
 
 
 def hits_vs_rest(df, features, quantile=0.9, target="popularity"):
-    """Standardised mean difference between the top decile of songs and everyone else."""
+    """Standardised mean difference, top 10% of songs vs the rest."""
     threshold = df[target].quantile(quantile)
     is_hit = df[target] >= threshold
     z = (df[features] - df[features].mean()) / df[features].std()
@@ -152,13 +151,13 @@ def hits_vs_rest(df, features, quantile=0.9, target="popularity"):
     ax.barh(diff.index, diff.values, color=[ACCENT if v > 0 else MUTED for v in diff.values])
     ax.axvline(0, color=DARK, lw=1)
     ax.set_xlabel("difference in means (standard deviations)")
-    ax.set_title(f"How top-10% songs (popularity ≥ {threshold:.0f}) differ from the rest")
+    ax.set_title(f"How top-10% songs (popularity >= {threshold:.0f}) differ from the rest")
     save(fig, "07_hits_vs_rest")
     return fig, diff
 
 
 def overall_vs_within_genre(df, features, target="popularity"):
-    """Correlation with the target before and after removing each genre's mean."""
+    """Correlation with the target, overall and after subtracting genre means."""
     cols = features + [target]
     overall = df[cols].corr()[target].drop(target)
     demeaned = df[cols] - df.groupby("song_genre")[cols].transform("mean")
@@ -172,7 +171,7 @@ def overall_vs_within_genre(df, features, target="popularity"):
     ax.set_yticks(y, table.index)
     ax.axvline(0, color=DARK, lw=1)
     ax.set_xlabel(f"Pearson correlation with {target}")
-    ax.set_title("Most of the feature–popularity link runs through genre")
+    ax.set_title("Most of the feature-popularity link runs through genre")
     ax.legend(loc="lower right", frameon=False)
     save(fig, "08_within_genre_correlation")
     return fig, table
