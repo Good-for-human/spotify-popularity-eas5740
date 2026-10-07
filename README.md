@@ -1,4 +1,4 @@
-# Spotify song popularity (EAS 5740 final project, Track 2)
+# Spotify song popularity
 
 Can we estimate a song's Spotify popularity from its audio features, and which features matter most?
 This repo has the data preparation and exploratory analysis. The modeling notebooks start from
