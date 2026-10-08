@@ -1,8 +1,8 @@
 # Spotify song popularity
 
 Can we estimate a song's Spotify popularity from its audio features, and which features matter most?
-This repo has the data preparation and exploratory analysis. The modeling notebooks start from
-`data/processed/spotify_clean.csv`.
+Data preparation and exploratory analysis are in notebooks 01 and 02. Modeling is in
+`notebooks/03_popularity_modeling.ipynb`, starting from `data/processed/spotify_clean.csv`.
 
 ## What the data looks like
 
@@ -58,6 +58,7 @@ src/data_prep.py                         cleaning pipeline and derived features
 src/plots.py                             plotting functions for the EDA notebook
 notebooks/01_data_preparation.ipynb      problems in the raw file and how we fixed them
 notebooks/02_exploratory_analysis.ipynb  patterns in the data and what they mean for modeling
+notebooks/03_popularity_modeling.ipynb   baseline, linear regression, tree, random forest
 reports/figures/                         EDA charts (PNG) for the slides
 ```
 
@@ -84,19 +85,26 @@ and `track_genre` -> `song_genre` to match the assignment brief.
 | one row per artist + title | 81,343 | single/album/compilation copies of the same recording, most at popularity 0 |
 | drop failed audio analysis and <30 s tracks | 81,181 | tempo/time signature of 0, too short to count as a stream |
 
-## Notes for modeling
+## Modeling
 
-- Use the `split` column (80/20, grouped by primary artist, seed 42). No artist is in both train and test.
-- Baseline: predicting the train mean gives test MAE ~16.6.
-- Feature set A = audio only (danceability, energy, loudness, speechiness, acousticness,
-  instrumentalness, liveness, valence, tempo, duration_min, explicit, mode, key, time_signature).
-  Set B = A + one-hot `song_genre`. Don't use song_id, song_name, album_name, artists or primary_artist.
-- Compare A vs B. Use model A's feature importance when the advice is for artists, because genre
-  will dominate model B.
-- Tree models should beat plain linear regression because of the inverted-U shapes above.
-  For linear models, scale the features and don't keep energy, loudness and acousticness all at once.
-- Leave `n_genres` out of the main model and test it separately. Any artist- or genre-level
-  popularity average has to be computed on the training folds only.
+`notebooks/03_popularity_modeling.ipynb` fits on the train split and scores once on the test split
+(80/20, grouped by primary artist, seed 42). Feature set A is the audio columns plus `n_artists`.
+Set B adds `song_genre`. Cross-validation for the tree and forest is grouped by artist as well.
+
+Test-set results:
+
+| model | MAE | RMSE | R2 |
+|---|---|---|---|
+| baseline (train mean) | 16.63 | 19.85 | -0.005 |
+| linear regression | 15.71 | 19.12 | 0.068 |
+| decision tree | 14.96 | 18.69 | 0.110 |
+| random forest, audio | 14.46 | 18.15 | 0.160 |
+| random forest, audio + genre | 13.16 | 16.95 | 0.267 |
+
+The forest with genre is the best of these. Genre is also the largest permutation importance in
+that model. On audio features alone, instrumentalness, acousticness and duration rank highest.
+R2 is still only about 0.27, and the model overpredicts low-popularity songs and underpredicts hits.
+Charts are in the notebook.
 
 ## Editing
 
