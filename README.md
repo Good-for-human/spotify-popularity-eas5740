@@ -4,6 +4,12 @@ Can we estimate a song's Spotify popularity from its audio features, and which f
 Data preparation and exploratory analysis are in notebooks 01 and 02. Modeling is in
 `notebooks/03_popularity_modeling.ipynb`, starting from `data/processed/spotify_clean.csv`.
 
+## Contributors
+
+- Xinyu Liu: data cleaning and exploratory analysis
+- Amanjyot Singh: modeling
+- Ruotong Wang: presentation and business analysis
+
 ## What the data looks like
 
 Raw file is 114,000 rows, pulled as 1,000 songs per genre. After cleaning we have 81,181 songs.
